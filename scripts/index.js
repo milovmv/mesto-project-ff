@@ -1,34 +1,35 @@
 
-function deleteItem() {
-    const listItem = document.querySelector('.card');
-    listItem.remove();
+const cardsOnPage = document.querySelector('.places__list');
+
+function deleteItem(elem) {
+    const listitem = elem.closest('.card');
+    listitem.remove();
 };
 
-function createCard(deletefunc) {
-    const cardMassive = [];
-    for (let i = 0; i<initialCards.length; i++) {
-        const cardTemplate = document.querySelector('#card-template').content;
-        const cardElement = cardTemplate.querySelector('.card').cloneNode(true);
+function createCard(incomeCard, deleteFunc) {
+    const cardTemplate = document.querySelector('#card-template').content;
+    const cardElement = cardTemplate.querySelector('.card').cloneNode(true);
         
-        const deleteButton = cardElement.querySelector('.card__delete-button');
-        const cardImage = cardElement.querySelector('.card__image');
-        const cardTitle = cardElement.querySelector('.card__title');
+    const deleteButton = cardElement.querySelector('.card__delete-button');
+    const cardImage = cardElement.querySelector('.card__image');
+    const cardTitle = cardElement.querySelector('.card__title');
         
-        cardImage.src = initialCards[i].link;
-        cardImage.alt = initialCards[i].name;
-        cardTitle.textContent = initialCards[i].name;
+    cardImage.src = incomeCard.link;
+    cardImage.alt = incomeCard.name;
+    cardTitle.textContent = incomeCard.name;
         
-
-        deleteButton.addEventListener('click', deletefunc);
-        cardMassive[i] = cardElement;
-    }
-
-    return cardMassive;
+    deleteButton.addEventListener('click', function () {
+        deleteFunc(deleteButton);
+    });
+    
+    return cardElement;
+    
 }
 
-createCard(deleteItem).forEach(function(item) {
-    const cardsOnPage = document.querySelector('.places__list');
-    cardsOnPage.append(item);
+
+initialCards.forEach(function(item) {
+    const newCard = createCard(item, deleteItem);
+    cardsOnPage.append(newCard);
 });
 
 
