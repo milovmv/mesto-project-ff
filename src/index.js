@@ -2,7 +2,7 @@ import './index.css';
 import {openModal, closeModal} from './scripts/modals.js';
 import {createCard, hideDeleteButton} from './scripts/card.js'
 import {enableValidation, clearValidation} from './scripts/validate.js'
-import {getStartProfile, getStartCards, getID, sendProfileInfo, sendNewCard, deleteItem, likeItem, changeLikeNumber, sendNewAvatar} from './api.js'
+import {getStartProfile, getStartCards, getID, sendProfileInfo, sendNewCard, deleteItem, likeItem, changeLikeNumber, sendNewAvatar} from './scripts/api.js'
 
 //Список карточек
 const cardsOnPage = document.querySelector('.places__list');
