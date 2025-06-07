@@ -2,14 +2,14 @@ import './index.css';
 import {openModal, closeModal} from './scripts/modals.js';
 import {createCard, hideDeleteButton} from './scripts/card.js'
 import {enableValidation, clearValidation} from './scripts/validate.js'
-import {getStartProfile, getStartCards, getID, sendProfileInfo, sendNewCard, deleteItem, likeItem, changeLikeNumber, sendNewAvatar} from './scripts/api.js'
+import {api} from './scripts/api.js'
+import {checkResponse} from './utils/error.js'
 
 //Список карточек
 const cardsOnPage = document.querySelector('.places__list');
 //Список попапов
 const popups = document.querySelectorAll('.popup');
 //Список кнопок удаления карточек
-
 
 //Кнопки главной страницы:
 //Редактировать профиль
@@ -99,13 +99,17 @@ function handleProfileFormSubmit(evt) {
     const originalButtonText = saveButton.textContent;
     saveButton.textContent = 'Сохранение...';
     saveButton.disabled = true;
-    sendProfileInfo(nameInput.value, jobInput.value)
-    .finally(() => {
-        saveButton.textContent = originalButtonText;
-        saveButton.disabled = false;
-      });
-    closeModal(popupTypeEdit);
+    api.sendProfileInfo(nameInput.value, jobInput.value)
+        .then(closeModal(popupTypeEdit))
+        .catch((error) => {
+            console.error('Ошибка при лайке:', error);
+        })
+        .finally(() => {
+            saveButton.textContent = originalButtonText;
+            saveButton.disabled = false;
+        });
 }
+
 //Функция отправки формы аватара
 function handleAvatarFormSubmit(evt) {
     evt.preventDefault();
@@ -114,12 +118,15 @@ function handleAvatarFormSubmit(evt) {
     const originalButtonText = saveButton.textContent;
     saveButton.textContent = 'Сохранение...';
     saveButton.disabled = true;
-    sendNewAvatar(popupAvatarURLInput.value)
-    .finally(() => {
-        saveButton.textContent = originalButtonText;
-        saveButton.disabled = false;
-      });
-    closeModal(popupNewAvatar);
+    api.sendNewAvatar(popupAvatarURLInput.value)
+        .then(closeModal(popupNewAvatar))
+        .catch((error) => {
+            console.error('Ошибка при лайке:', error);
+        })
+        .finally(() => {
+            saveButton.textContent = originalButtonText;
+            saveButton.disabled = false;
+        });
 }
 
 //Функция отправки формы добавления карточки
@@ -132,36 +139,36 @@ function handleFormCardSubmit(evt) {
     const originalButtonText = saveButton.textContent;
     saveButton.textContent = 'Сохранение...';
     saveButton.disabled = true;
-    const newCard = createCard(cardForCreate, likeItem, showImage);
+    const newCard = createCard(cardForCreate, showImage, cardsId[0]._id, 0);
     cardsOnPage.prepend(newCard);
     //Отправим карточку на сервер
-    sendNewCard(popupCardNameInput.value, popupCardURLInput.value)
-    .finally(() => {
-        saveButton.textContent = originalButtonText;
-        saveButton.disabled = false;
-      });
-    //Повесим на кнопку удаления новой карточки соответствующий обработчик
-    newCard.querySelector('.card__delete-button').addEventListener('click', () => {
-        deleteItem(newCard, cardsId[0]._id)
-    })
-    const likeButtonNew = newCard.querySelector('.card__like-button');
-    likeButtonNew.addEventListener('click', () => {
-            likeItem(likeButtonNew, cardsId[0]._id); 
-            changeLikeNumber(likeButtonNew, 0);
+    api.sendNewCard(popupCardNameInput.value, popupCardURLInput.value)
+        .then(closeModal(popupNewCard))
+        .catch((error) => {
+            console.error('Ошибка при лайке:', error);
         })
-    closeModal(popupNewCard);
+        .finally(() => {
+            saveButton.textContent = originalButtonText;
+            saveButton.disabled = false;
+        });
 }
 
 //Далее функциональность
 
 //Получаем с сервера стартовые данные профиля
-getStartProfile(profileTitle, profileDescription, profileAvatar);
+api.getStartProfile()
+    .then(result => {
+        profileTitle.textContent = result.name;
+        profileDescription.textContent = result.about;
+        profileAvatar.style.backgroundImage = `url(${result.avatar})`;
+    });
 
 //Отправляем запрос на сервер дляполучения массива карточек и Id пользователей и карточек
-Promise.all([getID(userId, cardsId), getStartCards(initialCards)])
+Promise.all([api.getID(userId, cardsId), api.getStartCards(initialCards)])
     .then(res => {
         initialCards.forEach(function(item) {
-            const newCard = createCard(item, likeItem, showImage);
+            console.log(cardsId[initialCards.indexOf(item)]._id)
+            const newCard = createCard(item, showImage, cardsId[initialCards.indexOf(item)]._id, initialCards.indexOf(item));
             hideDeleteButton(newCard, userId, initialCards.indexOf(item));
             cardsOnPage.append(newCard);
             
@@ -171,23 +178,6 @@ Promise.all([getID(userId, cardsId), getStartCards(initialCards)])
         formCardElement.addEventListener('submit', handleFormCardSubmit);
         formProfileElement.addEventListener('submit', handleProfileFormSubmit);
         formAvatarElement.addEventListener('submit', handleAvatarFormSubmit);
-        
-        //Найдем все кнопки удаления на полученных карточках и повесим на них обработчик удаления карточки
-        const deleteButtons = Array.from(document.querySelectorAll('.card__delete-button'));
-        deleteButtons.forEach(function(item) {
-            item.addEventListener('click', () => {
-                deleteItem(item, cardsId[deleteButtons.indexOf(item)]._id)
-            })
-        })
-
-        const likeButton = Array.from(document.querySelectorAll('.card__like-button'));
-        console.log(likeButton)
-        likeButton.forEach(function(item) {
-            item.addEventListener('click', () => {
-                likeItem(item, cardsId[likeButton.indexOf(item)]._id)
-                changeLikeNumber(item, likeButton.indexOf(item))
-            })
-        })
 
     })
     .catch(error => {
