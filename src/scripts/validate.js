@@ -1,25 +1,25 @@
 //Показать ошибку
-const showInputError = (formElement, inputElement, errorMessage) => {
+const showInputError = (formElement, inputElement, errorMessage, obj) => {
     // Находим элемент ошибки внутри самой функции
     const errorElement = formElement.querySelector(`.${inputElement.id}-error`);
     
-    inputElement.classList.add('popum__form__input_type_error');
+    inputElement.classList.add(obj.inputErrorClass);
     errorElement.textContent = errorMessage;
-    errorElement.classList.add('popum__form__input-error_active');
+    errorElement.classList.add(obj.errorClass);
 };
 
 //Скрыть ошибку
-const hideInputError = (formElement, inputElement) => {
+const hideInputError = (formElement, inputElement, obj) => {
     // Находим элемент ошибки
     const errorElement = formElement.querySelector(`.${inputElement.id}-error`);
     
-    inputElement.classList.remove('popum__form__input_type_error');
-    errorElement.classList.remove('popum__form__input-error_active');
+    inputElement.classList.remove(obj.inputErrorClass);
+    errorElement.classList.remove(obj.errorClass);
     errorElement.textContent = '';
 }; 
 
 //Функция валидации поля ввода
-const isValid = (formElement, inputElement) => {
+const isValid = (formElement, inputElement, obj) => {
   if (inputElement.validity.patternMismatch) {
         // встроенный метод setCustomValidity принимает на вход строку
         // и заменяет ею стандартное сообщение об ошибке
@@ -34,9 +34,9 @@ const isValid = (formElement, inputElement) => {
   if (!inputElement.validity.valid) {
     // теперь, если ошибка вызвана регулярным выражением,
         // переменная validationMessage хранит наше кастомное сообщение
-    showInputError(formElement, inputElement, inputElement.validationMessage);
+    showInputError(formElement, inputElement, inputElement.validationMessage, obj);
   } else {
-    hideInputError(formElement, inputElement);
+    hideInputError(formElement, inputElement, obj);
   }
 };
 
@@ -53,27 +53,27 @@ const hasInvalidInput = (inputList) => {
 }; 
 
 //Функция активации кнопки отправки формы
-const toggleButtonState = (inputList, buttonElement) => {
+const toggleButtonState = (inputList, buttonElement, obj) => {
   // Если есть хотя бы один невалидный инпут
   if (hasInvalidInput(inputList)) {
     // сделай кнопку неактивной
     buttonElement.disabled = true;
-    buttonElement.classList.add('popup__button_inactive');
+    buttonElement.classList.add(obj.inactiveButtonClass);
   } else {
         // иначе сделай кнопку активной
         buttonElement.disabled = false;
-    buttonElement.classList.remove('popup__button_inactive');
+    buttonElement.classList.remove(obj.inactiveButtonClass);
   }
 }; 
 
 //Функция включения-отключения кнопок отравки в формах
-export const setEventListeners = (formElement) => {
+export const setEventListeners = (formElement, obj) => {
   // Находим все поля внутри формы,
   // сделаем из них массив методом Array.from
-  const inputList = Array.from(formElement.querySelectorAll('.popup__input'));
+  const inputList = Array.from(formElement.querySelectorAll(obj.inputSelector));
 
-  const buttonElement = formElement.querySelector('.button');
-  toggleButtonState(inputList, buttonElement);
+  const buttonElement = formElement.querySelector(obj.submitButtonSelector);
+  toggleButtonState(inputList, buttonElement, obj);
 
   // Обойдём все элементы полученной коллекции
   inputList.forEach((inputElement) => {
@@ -82,8 +82,8 @@ export const setEventListeners = (formElement) => {
     inputElement.addEventListener('input', () => {
       // Внутри колбэка вызовем isValid,
       // передав ей форму и проверяемый элемент
-      isValid(formElement, inputElement);
-      toggleButtonState(inputList, buttonElement);
+      isValid(formElement, inputElement, obj);
+      toggleButtonState(inputList, buttonElement, obj);
     });
   });
 };
@@ -98,17 +98,17 @@ export const enableValidation = (obj) => {
   formList.forEach((formElement) => {
     // Для каждой формы вызовем функцию setEventListeners,
     // передав ей элемент формы
-    setEventListeners(formElement);
+    setEventListeners(formElement, obj);
   });
 };
 
 //функция очистки ошибок валидации в формах
-export const clearValidation = (profileForm, validationConfig) => {
-  const inputList = Array.from(profileForm.querySelectorAll(validationConfig.inputSelector));
+export const clearValidation = (profileForm, obj) => {
+  const inputList = Array.from(profileForm.querySelectorAll(obj.inputSelector));
   
   inputList.forEach((inputElement) => {
     if (!inputElement.validity.valid) {
-      hideInputError(profileForm, inputElement)
+      hideInputError(profileForm, inputElement, obj)
     } else {
       return inputElement;
     }

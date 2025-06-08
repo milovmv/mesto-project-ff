@@ -5,6 +5,8 @@ import {enableValidation, clearValidation} from './scripts/validate.js'
 import {api} from './scripts/api.js'
 import {checkResponse} from './utils/error.js'
 
+let userId;
+
 //Список карточек
 const cardsOnPage = document.querySelector('.places__list');
 //Список попапов
@@ -62,7 +64,7 @@ const popupImageContent = popupImage.querySelector('.popup__image');
 const popupImageText = popupImage.querySelector('.popup__caption');
 
 //Переменные для запросов с сервера
-let userId = []; // Для _id пользователя
+let usersId = []; // Для _id пользователя
 let cardsId = []; // Для _id карточек
 let initialCards = []; // Для карточек
 
@@ -93,14 +95,16 @@ function showImage(elem) {
 //Функция отправки формы редактирования профиля
 function handleProfileFormSubmit(evt) {
     evt.preventDefault();
-    profileTitle.textContent = nameInput.value;
-    profileDescription.textContent = jobInput.value;
     const saveButton = formProfileElement.querySelector('.popup__button');
     const originalButtonText = saveButton.textContent;
     saveButton.textContent = 'Сохранение...';
     saveButton.disabled = true;
     api.sendProfileInfo(nameInput.value, jobInput.value)
-        .then(closeModal(popupTypeEdit))
+        .then(res => {
+            profileTitle.textContent = nameInput.value;
+            profileDescription.textContent = jobInput.value;
+            closeModal(popupTypeEdit)
+        })
         .catch((error) => {
             console.error('Ошибка при лайке:', error);
         })
@@ -113,13 +117,15 @@ function handleProfileFormSubmit(evt) {
 //Функция отправки формы аватара
 function handleAvatarFormSubmit(evt) {
     evt.preventDefault();
-    profileAvatar.style.backgroundImage = `url(${popupAvatarURLInput.value})`
     const saveButton = formAvatarElement.querySelector('.popup__button');
     const originalButtonText = saveButton.textContent;
     saveButton.textContent = 'Сохранение...';
     saveButton.disabled = true;
     api.sendNewAvatar(popupAvatarURLInput.value)
-        .then(closeModal(popupNewAvatar))
+        .then(res => {
+            profileAvatar.style.backgroundImage = `url(${popupAvatarURLInput.value})`
+            closeModal(popupTypeEdit)
+        })
         .catch((error) => {
             console.error('Ошибка при лайке:', error);
         })
@@ -132,18 +138,19 @@ function handleAvatarFormSubmit(evt) {
 //Функция отправки формы добавления карточки
 function handleFormCardSubmit(evt) {
     evt.preventDefault();
-    const cardForCreate = {};
-    cardForCreate.name = popupCardNameInput.value;
-    cardForCreate.link = popupCardURLInput.value;
     const saveButton = formCardElement.querySelector('.popup__button');
     const originalButtonText = saveButton.textContent;
     saveButton.textContent = 'Сохранение...';
     saveButton.disabled = true;
-    const newCard = createCard(cardForCreate, showImage, cardsId[0]._id, 0);
-    cardsOnPage.prepend(newCard);
-    //Отправим карточку на сервер
     api.sendNewCard(popupCardNameInput.value, popupCardURLInput.value)
-        .then(closeModal(popupNewCard))
+        .then(res => {
+            const cardForCreate = {};
+            cardForCreate.name = popupCardNameInput.value;
+            cardForCreate.link = popupCardURLInput.value;
+            const newCard = createCard(cardForCreate, showImage, cardsId[0]._id, 0);
+            cardsOnPage.prepend(newCard);
+            closeModal(popupNewCard)
+        })
         .catch((error) => {
             console.error('Ошибка при лайке:', error);
         })
@@ -155,23 +162,27 @@ function handleFormCardSubmit(evt) {
 
 //Далее функциональность
 
-//Получаем с сервера стартовые данные профиля
-api.getStartProfile()
-    .then(result => {
-        profileTitle.textContent = result.name;
-        profileDescription.textContent = result.about;
-        profileAvatar.style.backgroundImage = `url(${result.avatar})`;
-    });
-
 //Отправляем запрос на сервер дляполучения массива карточек и Id пользователей и карточек
-Promise.all([api.getID(userId, cardsId), api.getStartCards(initialCards)])
+Promise.all([api.getID(), api.getStartCards(), api.getStartProfile()])
     .then(res => {
+        profileTitle.textContent = res[2].name;
+        profileDescription.textContent = res[2].about;
+        profileAvatar.style.backgroundImage = `url(${res[2].avatar})`;
+        userId = res[2]._id;
+
+        for(let i = 0; i < res[1].length; i++) {
+            initialCards.push({name: `${res[1][i].name}`, link: `${res[1][i].link}`, likes: `${res[1][i].likes.length}`});
+        }
+
+        for(let i = 0; i < res[0].length; i++) {
+            usersId.push({_id: `${res[0][i].owner._id}`});
+            cardsId.push({_id: `${res[0][i]._id}`});
+        }
+
         initialCards.forEach(function(item) {
-            console.log(cardsId[initialCards.indexOf(item)]._id)
             const newCard = createCard(item, showImage, cardsId[initialCards.indexOf(item)]._id, initialCards.indexOf(item));
-            hideDeleteButton(newCard, userId, initialCards.indexOf(item));
+            hideDeleteButton(newCard, usersId, initialCards.indexOf(item), userId);
             cardsOnPage.append(newCard);
-            
         });
         
         //Повесим обработчик события на отправку формы
@@ -190,12 +201,26 @@ profileEditButton.addEventListener('click', function() {
     openModal(popupTypeEdit);
     nameInput.value = profileTitle.textContent;
     jobInput.value = profileDescription.textContent;
-    clearValidation(formProfileElement, {inputSelector: '.popup__input'});
+    clearValidation(formProfileElement, {
+        formSelector: '.popup__form',
+        inputSelector: '.popup__input',
+        submitButtonSelector: '.popup__button',
+        inactiveButtonClass: 'popup__button_disabled',
+        inputErrorClass: 'popup__input_type_error',
+        errorClass: 'popup__error_visible'
+      });
 });
 
 profileAvatarEdit.addEventListener('click', function() {
     openModal(popupNewAvatar);
-    clearValidation(formProfileElement, {inputSelector: '.popup__input'});
+    clearValidation(formProfileElement, {
+        formSelector: '.popup__form',
+        inputSelector: '.popup__input',
+        submitButtonSelector: '.popup__button',
+        inactiveButtonClass: 'popup__button_disabled',
+        inputErrorClass: 'popup__input_type_error',
+        errorClass: 'popup__error_visible'
+      });
 });
 
 
@@ -207,12 +232,24 @@ profileAddButton.addEventListener('click', function(){
     const buttonElement = formCardElement.querySelector('.button');
     buttonElement.disabled = true;
     buttonElement.classList.add('popup__button_inactive');
-    clearValidation(formCardElement, {inputSelector: '.popup__input'});
+    clearValidation(formCardElement, {
+        formSelector: '.popup__form',
+        inputSelector: '.popup__input',
+        submitButtonSelector: '.popup__button',
+        inactiveButtonClass: 'popup__button_disabled',
+        inputErrorClass: 'popup__input_type_error',
+        errorClass: 'popup__error_visible'
+      });
 });
 
 //Включаем валидацию всех форм
 enableValidation({
-    formSelector: '.popup__form'
+    formSelector: '.popup__form',
+    inputSelector: '.popup__input',
+    submitButtonSelector: '.popup__button',
+    inactiveButtonClass: 'popup__button_disabled',
+    inputErrorClass: 'popup__input_type_error',
+    errorClass: 'popup__error_visible'
   }); 
 
 

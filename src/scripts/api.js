@@ -15,38 +15,22 @@ export const api = {
       headers: config.headers
     })
     .then(checkResponse)
-    .then((result) => {
-      return result;
-    })
   },
 
-  getStartCards: function(initialCards) {
+  getStartCards: function() {
     return fetch (`${config.baseUrl}/cards`, {
       method: 'GET',
       headers: config.headers
     })
     .then(checkResponse)
-    .then((result) => {
-      for(let i = 0; i < result.length; i++) {
-          initialCards.push({name: `${result[i].name}`, link: `${result[i].link}`, likes: `${result[i].likes.length}`});
-      }
-      return initialCards;
-    }) 
   },
 
-  getID: function(userId, cardsId) {
+  getID: function() {
     return fetch (`${config.baseUrl}/cards`, {
       method: 'GET',
       headers: config.headers
     })
     .then(checkResponse)
-    .then((result) => {
-      for(let i = 0; i < result.length; i++) {
-          userId.push({_id: `${result[i].owner._id}`});
-          cardsId.push({_id: `${result[i]._id}`});
-      }
-      return userId, cardsId;
-    })
   },
 
   sendProfileInfo: function(nameInput, jobInput) {
@@ -58,6 +42,7 @@ export const api = {
         about: `${jobInput}`
       })
     })
+    .then(checkResponse)
   },
 
   sendNewCard: function(popupCardNameInput, popupCardURLInput) {
@@ -69,6 +54,7 @@ export const api = {
         link: `${popupCardURLInput}`
       })
     })
+    .then(checkResponse)
   },
 
   sendNewAvatar: function(popupAvatarInput) {
@@ -79,6 +65,7 @@ export const api = {
         avatar: `${popupAvatarInput}`
       })
     })
+    .then(checkResponse)
   },
 
   deleteItem: function(cardId) {
@@ -86,34 +73,33 @@ export const api = {
       method: 'DELETE',
       headers: config.headers
     })
+    .then(checkResponse)
   },
 
-  likeItem: function(elem, cardId) {
-    const targetButton = elem.closest('.card__like-button');
-    if(!targetButton.classList.contains('card__like-button_is-active')) {
-        targetButton.classList.add('card__like-button_is-active');
-        return fetch(`${config.baseUrl}/cards/likes/${cardId}`, {
-            method: 'PUT',
-            headers: config.headers
-        })
-    } else {
-        targetButton.classList.remove('card__like-button_is-active')
-        return fetch(`${config.baseUrl}/cards/likes/${cardId}`, {
-            method: 'DELETE',
-            headers: config.headers
-        })
-    }
+  likeItemPut: function(cardId) {
+    return fetch(`${config.baseUrl}/cards/likes/${cardId}`, {
+      method: 'PUT',
+      headers: config.headers
+    })
+    .then(checkResponse)
   },
 
-  changeLikeNumber: function(elem, index) {
-    const newLikesNumber = elem.parentElement.querySelector('.card__likes-number');
+  likeItemDelete: function(cardId) {
+    return fetch(`${config.baseUrl}/cards/likes/${cardId}`, {
+      method: 'DELETE',
+      headers: config.headers
+    })
+    .then(checkResponse)
+  },
+
+  changeLikeNumber: function(index) {
     return fetch(`${config.baseUrl}/cards/`, {
         method: 'GET',
         headers: config.headers  
         })
-        .then(res => res.json())
+        .then(checkResponse)
         .then(result => {
-            return newLikesNumber.textContent = result[index].likes.length;
+            return result[index].likes.length;
         })
   }
 }

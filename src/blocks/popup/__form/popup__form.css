@@ -1,13 +1,3 @@
 .popup__form {
   margin-top: 27px;
 }
-
-.popum__form__input_type_error {
-  border: none;
-  border-bottom: 1px solid red;
-}
-
-.popum__form__input-error_active {
-  color: red;
-  font-size: 12px;
-}
