@@ -38,7 +38,7 @@ export function createCard(incomeCard, showImageFunc, cardId, index) {
       };
       api.changeLikeNumber(index)
         .then(res => {
-          cardElement.querySelector('.card__like-button').parentElement.querySelector('.card__likes-number').textContent = res;
+          cardElement.querySelector('.card__like-button').closest('.card__like-block').querySelector('.card__likes-number').textContent = res;
         })
         .catch((error) => {
           console.error('Ошибка:', error);
